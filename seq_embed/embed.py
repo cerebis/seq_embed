@@ -1,6 +1,9 @@
 import warnings
 import logging
 import Bio.SeqIO
+import io
+import gzip
+import bz2
 import random
 import tqdm
 import torch
@@ -10,9 +13,49 @@ import torch.utils.data as util_data
 import torch.nn as nn
 import numpy as np
 import os
+import pickle
 
 from collections import OrderedDict
-from proxigenomics_toolkit.io_utils import save_object
+
+def save_object(file_name, obj):
+    """
+    Serialize an object to a file with gzip compression. .gz will automatically be
+    added if missing.
+
+    :param file_name: output file name
+    :param obj: object to serialize
+    """
+
+    def open_output(file_name, append=False, compress=None):
+        """
+        Open a text stream for reading or writing. Compression can be enabled
+        with either 'bzip2' or 'gzip'. Additional option for gzip compression
+        level. Compressed filenames are only appended with suffix if not included.
+
+        :param file_name: file name of output
+        :param append: append to any existing file
+        :param compress: gzip, bzip2
+        :return:
+        """
+
+        mode = 'w' if not append else 'w+'
+
+        if compress == 'bzip2':
+            if not file_name.endswith('.bz2'):
+                file_name += '.bz2'
+            # bz2 missing method to be wrapped by BufferedWriter. Just directly
+            # supply a buffer size
+            return bz2.open(file_name, mode)
+        elif compress == 'gzip':
+            if not file_name.endswith('.gz'):
+                file_name += '.gz'
+            return io.BufferedWriter(gzip.open(file_name, mode))
+        else:
+            return io.BufferedWriter(io.FileIO(file_name, mode))
+
+    with open_output(file_name, compress='gzip') as out_h:
+        pickle.dump(obj, out_h)
+
 
 #torch.use_deterministic_algorithms(True)
 torch.backends.cudnn.benchmark = False
