@@ -1,9 +1,7 @@
 import warnings
 import logging
 import Bio.SeqIO
-import io
 import gzip
-import bz2
 import random
 import tqdm
 import torch
@@ -27,10 +25,10 @@ def serialize_pickled_object(file_name, obj):
     """
     if not file_name.endswith('.gz') or not file_name.endswith('.gzip'):
         file_name += '.gz'
-    with gzip.open(file_name, 'wb') as output_hndl:
+    with gzip.open(file_name, 'wb') as output_handle:
         # pycharm throws a type check warning here, but it is wrong
         # noinspection PyTypeChecker
-        pickle.dump(obj, output_hndl)
+        pickle.dump(obj, output_handle)
 
 
 #torch.use_deterministic_algorithms(True)
