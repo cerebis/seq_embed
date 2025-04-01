@@ -17,7 +17,7 @@ import pickle
 
 from collections import OrderedDict
 
-def save_object(file_name, obj):
+def serialize_pickled_object(file_name, obj):
     """
     Serialize an object to a file with gzip compression. .gz will automatically be
     added if missing.
@@ -25,36 +25,12 @@ def save_object(file_name, obj):
     :param file_name: output file name
     :param obj: object to serialize
     """
-
-    def open_output(file_name, append=False, compress=None):
-        """
-        Open a text stream for reading or writing. Compression can be enabled
-        with either 'bzip2' or 'gzip'. Additional option for gzip compression
-        level. Compressed filenames are only appended with suffix if not included.
-
-        :param file_name: file name of output
-        :param append: append to any existing file
-        :param compress: gzip, bzip2
-        :return:
-        """
-
-        mode = 'w' if not append else 'w+'
-
-        if compress == 'bzip2':
-            if not file_name.endswith('.bz2'):
-                file_name += '.bz2'
-            # bz2 missing method to be wrapped by BufferedWriter. Just directly
-            # supply a buffer size
-            return bz2.open(file_name, mode)
-        elif compress == 'gzip':
-            if not file_name.endswith('.gz'):
-                file_name += '.gz'
-            return io.BufferedWriter(gzip.open(file_name, mode))
-        else:
-            return io.BufferedWriter(io.FileIO(file_name, mode))
-
-    with open_output(file_name, compress='gzip') as out_h:
-        pickle.dump(obj, out_h)
+    if not file_name.endswith('.gz') or not file_name.endswith('.gzip'):
+        file_name += '.gz'
+    with gzip.open(file_name, 'wb') as output_hndl:
+        # pycharm throws a type check warning here, but it is wrong
+        # noinspection PyTypeChecker
+        pickle.dump(obj, output_hndl)
 
 
 #torch.use_deterministic_algorithms(True)
@@ -118,7 +94,7 @@ if __name__ == '__main__':
                         type=int, help='Chunk-size for larger sequences [5000]')
     parser.add_argument('-d', '--device-id', default=0, type=int,
                         help='Specify GPU device ID [0]')
-    parser.add_argument('--n-gpu', default=2,
+    parser.add_argument('--n-gpu', default=1,
                         type=int, help='Number of GPUs to use [all]')
     parser.add_argument('-b', '--batch-size', default=50,
                         type=int, help='Batch-size for processing sequences [50]')
@@ -206,4 +182,4 @@ if __name__ == '__main__':
         embeds[seq.id] = embeddings
 
     # Serialize the object to a simple pickle.
-    save_object(args.pickle_out, embeds)
+    serialize_pickled_object(args.pickle_out, embeds)
